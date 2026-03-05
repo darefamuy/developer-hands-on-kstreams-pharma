@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "PriceUpdate",
+  "namespace": "hci",
+  "fields": [
+    { "name": "gtin",                       "type": "string" },
+    { "name": "previousExFactoryPriceCHF",  "type": "double" },
+    { "name": "newExFactoryPriceCHF",        "type": "double" },
+    { "name": "previousPublicPriceCHF",      "type": "double" },
+    { "name": "newPublicPriceCHF",           "type": "double" },
+    { "name": "effectiveDateUtc",            "type": {"type":"long","logicalType":"timestamp-millis"} },
+    { "name": "changeReason",                "type": "string" },
+    { "name": "changedBy",                   "type": "string" },
+    { "name": "approvalReference",           "type": ["null","string"], "default": null }
+  ]
+}

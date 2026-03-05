@@ -1,0 +1,17 @@
+{
+  "type": "record",
+  "name": "DrugAlert",
+  "namespace": "hci",
+  "fields": [
+    { "name": "alertId",     "type": "string" },
+    { "name": "gtin",        "type": "string" },
+    { "name": "alertType",   "type": { "type": "enum", "name": "AlertType",     "symbols": ["RECALL","SHORTAGE","QUALITY_DEFECT","PRICE_SUSPENSION","IMPORT_BAN"] } },
+    { "name": "severity",    "type": { "type": "enum", "name": "AlertSeverity", "symbols": ["CLASS_I","CLASS_II","CLASS_III","ADVISORY"] } },
+    { "name": "headline",    "type": "string" },
+    { "name": "description", "type": "string" },
+    { "name": "affectedLots","type": {"type":"array","items":"string"}, "default": [] },
+    { "name": "issuedByUtc", "type": {"type":"long","logicalType":"timestamp-millis"} },
+    { "name": "expiresUtc",  "type": ["null",{"type":"long","logicalType":"timestamp-millis"}], "default": null },
+    { "name": "sourceUrl",   "type": "string" }
+  ]
+}

@@ -1,0 +1,128 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.github.davidmc24.gradle.plugin.avro' version '1.9.1'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group   = 'com.hci.pharma'
+version = '1.0.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://packages.confluent.io/maven/' }
+}
+
+ext {
+    kafkaVersion          = '3.7.0'
+    confluentVersion      = '7.6.0'
+    avroVersion           = '1.11.3'
+    slf4jVersion          = '2.0.13'
+    logbackVersion        = '1.5.6'
+    jacksonVersion        = '2.17.1'
+    junitVersion          = '5.10.2'
+    mockitoVersion        = '5.11.0'
+    assertjVersion        = '3.25.3'
+    testcontainersVersion = '1.19.8'
+    micrometerVersion     = '1.13.1'
+}
+
+dependencies {
+    // ── Kafka Streams ─────────────────────────────────────────────────────────
+    implementation "org.apache.kafka:kafka-streams:${kafkaVersion}"
+    implementation "org.apache.kafka:kafka-clients:${kafkaVersion}"
+
+    // ── Confluent Schema Registry + Avro Serdes ───────────────────────────────
+    implementation "io.confluent:kafka-streams-avro-serde:${confluentVersion}"
+    implementation "io.confluent:kafka-avro-serializer:${confluentVersion}"
+    implementation "io.confluent:kafka-schema-registry-client:${confluentVersion}"
+    implementation "org.apache.avro:avro:${avroVersion}"
+
+    // ── Logging ───────────────────────────────────────────────────────────────
+    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
+    implementation "ch.qos.logback:logback-classic:${logbackVersion}"
+
+    // ── Jackson (used for DLQ envelope serialisation) ─────────────────────────
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+
+    // ── Metrics (Micrometer / Prometheus) ─────────────────────────────────────
+    implementation "io.micrometer:micrometer-core:${micrometerVersion}"
+    implementation "io.micrometer:micrometer-registry-prometheus:${micrometerVersion}"
+
+    // ── Test ──────────────────────────────────────────────────────────────────
+    testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.apache.kafka:kafka-streams-test-utils:${kafkaVersion}"
+
+    // Testcontainers for integration tests
+    testImplementation "org.testcontainers:testcontainers:${testcontainersVersion}"
+    testImplementation "org.testcontainers:kafka:${testcontainersVersion}"
+    testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+}
+
+// ── Avro code generation ──────────────────────────────────────────────────────
+// Generated classes land in build/generated-main-avro-java and are added
+// to the main source set automatically by the avro plugin.
+avro {
+    createSetters          = true
+    fieldVisibility        = 'PRIVATE'
+    outputCharacterEncoding = 'UTF-8'
+    stringType             = 'String'
+    enableDecimalLogicalType = true
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java', 'build/generated-main-avro-java']
+        }
+        resources {
+            srcDirs = ['src/main/resources']
+        }
+    }
+}
+
+// ── Application entry point ───────────────────────────────────────────────────
+application {
+    mainClass = 'com.hci.pharma.streams.HciStreamsApplication'
+}
+
+// ── Shadow JAR (fat-jar for deployment) ──────────────────────────────────────
+shadowJar {
+    archiveClassifier = ''
+    mergeServiceFiles()
+    manifest {
+        attributes 'Main-Class': application.mainClass
+    }
+}
+
+// Ensure the application distributions use the shadow jar
+tasks.named('distZip') { dependsOn shadowJar }
+tasks.named('distTar') { dependsOn shadowJar }
+tasks.named('startScripts') { dependsOn shadowJar }
+
+// Disable default jar and use shadowJar instead for assemble
+jar.enabled = false
+assemble.dependsOn shadowJar
+
+// ── Test configuration ────────────────────────────────────────────────────────
+test {
+    useJUnitPlatform()
+    jvmArgs '-Xmx512m'
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        showStandardStreams = false
+        exceptionFormat     = 'full'
+    }
+}
+
+// Ensure Avro sources are generated before compiling
+compileJava.dependsOn generateAvroJava
