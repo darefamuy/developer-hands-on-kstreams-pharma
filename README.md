@@ -1,12 +1,4 @@
-# HCI Pharma — Kafka Streams Application
-
-> **Module 5 — Stateful Stream Processing**  
-> HCI Solutions AG / Galenica Group · Confluent Cloud Training Curriculum
-
-A production-ready Kafka Streams application demonstrating stateful processing for the Swiss pharmaceutical domain. Built with Java 17, Gradle, Avro, and Confluent Schema Registry.
-
----
-
+# Pharma — Kafka Streams Application
 ## Use Cases
 
 This application runs three independent processing topologies within a single Kafka Streams instance:
